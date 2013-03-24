@@ -66,40 +66,40 @@ execute(Req, Env) ->
 	when Req::cowboy_req:req().
 handler_init(Req, State, Handler, HandlerOpts) ->
 	Transport = cowboy_req:get(transport, Req),
-    cowboy_dtrace:entry(Handler, "execute"),
+    cowboy_dtrace:h_entry(Handler, "execute"),
 	try Handler:init({Transport:name(), http}, Req, HandlerOpts) of
 		{ok, Req2, HandlerState} ->
-            cowboy_dtrace:return(Handler, "execute"),
+            cowboy_dtrace:h_return(Handler, "execute"),
 			handler_handle(Req2, State, Handler, HandlerState);
 		{loop, Req2, HandlerState} ->
-            cowboy_dtrace:return(Handler, "execute"),
+            cowboy_dtrace:h_return(Handler, "execute"),
 			handler_after_callback(Req2, State, Handler, HandlerState);
 		{loop, Req2, HandlerState, hibernate} ->
-            cowboy_dtrace:return(Handler, "execute"),
+            cowboy_dtrace:h_return(Handler, "execute"),
 			handler_after_callback(Req2, State#state{hibernate=true},
 				Handler, HandlerState);
 		{loop, Req2, HandlerState, Timeout} ->
-            cowboy_dtrace:return(Handler, "execute"),
+            cowboy_dtrace:h_return(Handler, "execute"),
 			State2 = handler_loop_timeout(State#state{loop_timeout=Timeout}),
 			handler_after_callback(Req2, State2, Handler, HandlerState);
 		{loop, Req2, HandlerState, Timeout, hibernate} ->
-            cowboy_dtrace:return(Handler, "execute"),
+            cowboy_dtrace:h_return(Handler, "execute"),
 			State2 = handler_loop_timeout(State#state{
 				hibernate=true, loop_timeout=Timeout}),
 			handler_after_callback(Req2, State2, Handler, HandlerState);
 		{shutdown, Req2, HandlerState} ->
-            cowboy_dtrace:return(Handler, "execute"),
+            cowboy_dtrace:h_return(Handler, "execute"),
 			terminate_request(Req2, State, Handler, HandlerState,
 				{normal, shutdown});
 		%% @todo {upgrade, transport, Module}
 		{upgrade, protocol, Module} ->
-            cowboy_dtrace:return(Handler, "execute"),
+            cowboy_dtrace:h_return(Handler, "execute"),
 			upgrade_protocol(Req, State, Handler, HandlerOpts, Module);
 		{upgrade, protocol, Module, Req2, HandlerOpts2} ->
-            cowboy_dtrace:return(Handler, "execute"),
+            cowboy_dtrace:h_return(Handler, "execute"),
 			upgrade_protocol(Req2, State, Handler, HandlerOpts2, Module)
 	catch Class:Reason ->
-            cowboy_dtrace:return(Handler, "execute"),
+            cowboy_dtrace:h_return(Handler, "execute"),
 		error_logger:error_msg(
 			"** Cowboy handler ~p terminating in ~p/~p~n"
 			"   for the reason ~p:~p~n"
@@ -126,14 +126,14 @@ upgrade_protocol(Req, #state{env=Env},
 	| {error, 500, Req}
 	when Req::cowboy_req:req().
 handler_handle(Req, State, Handler, HandlerState) ->
-    cowboy_dtrace:entry(Handler, "handle"),
+    cowboy_dtrace:h_entry(Handler, "handle"),
 	try Handler:handle(Req, HandlerState) of
 		{ok, Req2, HandlerState2} ->
-            cowboy_dtrace:return(Handler, "handle"),
+            cowboy_dtrace:h_return(Handler, "handle"),
 			terminate_request(Req2, State, Handler, HandlerState2,
 				{normal, shutdown})
 	catch Class:Reason ->
-            cowboy_dtrace:return(Handler, "handle"),
+            cowboy_dtrace:h_return(Handler, "handle"),
 		error_logger:error_msg(
 			"** Cowboy handler ~p terminating in ~p/~p~n"
 			"   for the reason ~p:~p~n"
@@ -235,21 +235,21 @@ handler_loop(Req, State=#state{loop_buffer_size=NbBytes,
 	| {error, 500, Req} | {suspend, module(), atom(), [any()]}
 	when Req::cowboy_req:req().
 handler_call(Req, State, Handler, HandlerState, Message) ->
-    cowboy_dtrace:entry(Handler, "info"),
+    cowboy_dtrace:h_entry(Handler, "info"),
 	try Handler:info(Message, Req, HandlerState) of
 		{ok, Req2, HandlerState2} ->
-            cowboy_dtrace:return(Handler, "info"),
+            cowboy_dtrace:h_return(Handler, "info"),
 			handler_after_loop(Req2, State, Handler, HandlerState2,
 				{normal, shutdown});
 		{loop, Req2, HandlerState2} ->
-            cowboy_dtrace:return(Handler, "info"),
+            cowboy_dtrace:h_return(Handler, "info"),
 			handler_after_callback(Req2, State, Handler, HandlerState2);
 		{loop, Req2, HandlerState2, hibernate} ->
-            cowboy_dtrace:return(Handler, "info"),
+            cowboy_dtrace:h_return(Handler, "info"),
 			handler_after_callback(Req2, State#state{hibernate=true},
 				Handler, HandlerState2)
 	catch Class:Reason ->
-            cowboy_dtrace:return(Handler, "info"),
+            cowboy_dtrace:h_return(Handler, "info"),
 		error_logger:error_msg(
 			"** Cowboy handler ~p terminating in ~p/~p~n"
 			"   for the reason ~p:~p~n"
@@ -292,12 +292,12 @@ terminate_request(Req, #state{env=Env}, Handler, HandlerState, Reason) ->
 	{normal, timeout | shutdown} | {error, atom()}) -> ok.
 handler_terminate(Req, Handler, HandlerState, Reason) ->
 	try
-        cowboy_dtrace:entry(Handler, "terminate"),
+        cowboy_dtrace:h_entry(Handler, "terminate"),
 		Res = Handler:terminate(Reason, cowboy_req:lock(Req), HandlerState),
-        cowboy_dtrace:return(Handler, "terminate"),
+        cowboy_dtrace:h_return(Handler, "terminate"),
         Res
 	catch Class:Reason2 ->
-        cowboy_dtrace:return(Handler, "terminate"),
+        cowboy_dtrace:h_return(Handler, "terminate"),
 		error_logger:error_msg(
 			"** Cowboy handler ~p terminating in ~p/~p~n"
 			"   for the reason ~p:~p~n"

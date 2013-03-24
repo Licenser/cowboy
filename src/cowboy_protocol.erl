@@ -511,20 +511,20 @@ execute(Req, State=#state{middlewares=Middlewares, env=Env}) ->
 execute(Req, State, Env, []) ->
 	next_request(Req, State, get_value(result, Env, ok));
 execute(Req, State, Env, [Middleware|Tail]) ->
-    cowboy_dtrace:entry(Middleware, "execute"),
+    cowboy_dtrace:mw_entry(Middleware, "execute"),
 	case Middleware:execute(Req, Env) of
 		{ok, Req2, Env2} ->
-            cowboy_dtrace:return(Middleware, "execute"),
+            cowboy_dtrace:mw_return(Middleware, "execute"),
 			execute(Req2, State, Env2, Tail);
 		{suspend, Module, Function, Args} ->
-            cowboy_dtrace:return(Middleware, "execute"),
+            cowboy_dtrace:mw_return(Middleware, "execute"),
 			erlang:hibernate(?MODULE, resume,
 				[State, Env, Tail, Module, Function, Args]);
 		{halt, Req2} ->
-            cowboy_dtrace:return(Middleware, "execute"),
+            cowboy_dtrace:mw_return(Middleware, "execute"),
 			next_request(Req2, State, ok);
 		{error, Code, Req2} ->
-            cowboy_dtrace:return(Middleware, "execute"),
+            cowboy_dtrace:mw_return(Middleware, "execute"),
 			error_terminate(Code, Req2, State)
 	end.
 
@@ -532,20 +532,20 @@ execute(Req, State, Env, [Middleware|Tail]) ->
 -spec resume(#state{}, cowboy_middleware:env(), [module()],
 	module(), module(), [any()]) -> ok.
 resume(State, Env, Tail, Module, Function, Args) ->
-    cowboy_dtrace:entry(Module, atom_to_list(Function)),
+    cowboy_dtrace:mw_entry(Module, atom_to_list(Function)),
 	case apply(Module, Function, Args) of
 		{ok, Req2, Env2} ->
-            cowboy_dtrace:return(Module, atom_to_list(Function)),
+            cowboy_dtrace:mw_return(Module, atom_to_list(Function)),
 			execute(Req2, State, Env2, Tail);
 		{suspend, Module2, Function2, Args2} ->
-            cowboy_dtrace:return(Module, atom_to_list(Function)),
+            cowboy_dtrace:mw_return(Module, atom_to_list(Function)),
 			erlang:hibernate(?MODULE, resume,
 				[State, Env, Tail, Module2, Function2, Args2]);
 		{halt, Req2} ->
-            cowboy_dtrace:return(Module, atom_to_list(Function)),
+            cowboy_dtrace:mw_return(Module, atom_to_list(Function)),
 			next_request(Req2, State, ok);
 		{error, Code, Req2} ->
-            cowboy_dtrace:return(Module, atom_to_list(Function)),
+            cowboy_dtrace:mw_return(Module, atom_to_list(Function)),
 			error_terminate(Code, Req2, State)
 	end.
 
